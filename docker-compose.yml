@@ -1,0 +1,122 @@
+# Collector + three simulated sensor regions on an internal network with no route out.
+# Start with ./compose.sh (generates per-node secrets into .env, builds under the shared flock).
+#
+# Port layout on the host (all bound to 127.0.0.1 only):
+#   8103 HUD/collector | node-lon: 2222 ssh, 2323 telnet, 8180 http, 6380 redis, 3307 mysql
+#   node-fra: 2223 ssh, 2324 telnet, 8181 http | node-nyc: 2224 ssh, 2325 telnet, 8182 http
+name: honeypot-net
+
+networks:
+  sensornet:
+    internal: true        # no default gateway: containers here cannot reach the internet
+  edge:                   # only the edge relay joins this one, to publish ports
+
+volumes:
+  collector-data:
+  node-lon-data:
+  node-fra-data:
+  node-nyc-data:
+
+x-hardening: &hardening
+  image: honeypot-net:0.1.0
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  user: "10001:10001"
+  tmpfs: ["/tmp:size=16m,mode=1777"]
+  pids_limit: 128
+  restart: unless-stopped
+
+x-sensor: &sensor
+  <<: *hardening
+  command: ["sensor", "all"]
+  networks: [sensornet]
+  mem_limit: 192m
+  cpus: 0.5
+  depends_on: [collector]
+
+x-sensor-env: &sensor-env
+  HP_COLLECTOR_URL: http://collector:8103
+  HP_BIND: 0.0.0.0
+  HP_PROXY_PROTOCOL: "1"   # real client address arrives from the edge relay
+  # Docker-internal ranges count as lab traffic (simulator runs). Remove on a real deployment.
+  HP_SIM_SOURCES: 127.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+  HP_HEARTBEAT: "15"
+
+services:
+  collector:
+    <<: *hardening
+    command: ["collector"]
+    networks: [sensornet]
+    mem_limit: 384m
+    cpus: 1.0
+    environment:
+      HP_BIND: 0.0.0.0
+      HP_NODE_SECRETS: node-lon=${HP_SECRET_LON:?run ./compose.sh},node-fra=${HP_SECRET_FRA:?},node-nyc=${HP_SECRET_NYC:?},node-sgp=${HP_SECRET_SGP:?}
+      HP_SIM_TARGET: edge   # HUD live simulator goes through the relay like outside traffic
+    volumes: ["collector-data:/data"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8103/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  node-lon:
+    <<: *sensor
+    environment:
+      <<: *sensor-env
+      HP_NODE_ID: node-lon
+      HP_REGION: eu-west (London)
+      HP_NODE_SECRET: ${HP_SECRET_LON:?}
+    volumes: ["node-lon-data:/data"]
+
+  node-fra:
+    <<: *sensor
+    environment:
+      <<: *sensor-env
+      HP_NODE_ID: node-fra
+      HP_REGION: eu-central (Frankfurt)
+      HP_NODE_SECRET: ${HP_SECRET_FRA:?}
+      HP_BANNER_PORTS: ""
+    volumes: ["node-fra-data:/data"]
+
+  node-nyc:
+    <<: *sensor
+    environment:
+      <<: *sensor-env
+      HP_NODE_ID: node-nyc
+      HP_REGION: us-east (New York)
+      HP_NODE_SECRET: ${HP_SECRET_NYC:?}
+      HP_BANNER_PORTS: ""
+    volumes: ["node-nyc-data:/data"]
+
+  # TCP relay: the only container with a foot outside the internal network. It runs no
+  # sensor logic, only forwards bytes (adding a PROXY v1 header for sensor ports).
+  edge:
+    <<: *hardening
+    command: ["edge"]
+    networks: [sensornet, edge]
+    mem_limit: 96m
+    cpus: 0.5
+    depends_on: [collector, node-lon, node-fra, node-nyc]
+    environment:
+      HP_BIND: 0.0.0.0
+      HP_EDGE_MAP: >-
+        8103=collector:8103,
+        2222=node-lon:2222:proxy,2323=node-lon:2323:proxy,8180=node-lon:8180:proxy,
+        6380=node-lon:6380:proxy,3307=node-lon:3307:proxy,
+        2223=node-fra:2222:proxy,2324=node-fra:2323:proxy,8181=node-fra:8180:proxy,
+        2224=node-nyc:2222:proxy,2325=node-nyc:2323:proxy,8182=node-nyc:8180:proxy
+    ports:
+      - "127.0.0.1:8103:8103"
+      - "127.0.0.1:2222:2222"
+      - "127.0.0.1:2323:2323"
+      - "127.0.0.1:8180:8180"
+      - "127.0.0.1:6380:6380"
+      - "127.0.0.1:3307:3307"
+      - "127.0.0.1:2223:2223"
+      - "127.0.0.1:2324:2324"
+      - "127.0.0.1:8181:8181"
+      - "127.0.0.1:2224:2224"
+      - "127.0.0.1:2325:2325"
+      - "127.0.0.1:8182:8182"

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>honeypot-net</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/static/hud.css">
+<style>
+  td code { white-space: pre-wrap; word-break: break-all; }
+  .kv td:first-child { color: var(--muted); width: 45%; }
+  .clickable { cursor: pointer; color: var(--info); }
+</style>
+</head>
+<body>
+<header class="hud">
+  <span class="brand">honeypot-net</span>
+  <span class="sub">collector :8103</span>
+  <label class="sub"><input type="checkbox" id="incSim" checked> include simulated</label>
+  <nav>
+    <button data-view="live">Live</button>
+    <button data-view="analysis">Analysis</button>
+    <button data-view="tools">Simulate &amp; export</button>
+  </nav>
+</header>
+<main>
+  <section class="view" id="live">
+    <div class="grid">
+      <div class="panel span-4"><h2>Totals</h2><div id="overview"></div></div>
+      <div class="panel span-8"><h2>Sensor nodes</h2><div id="nodes"></div></div>
+      <div class="panel span-12"><h2>Event feed (refreshes every 5 s)</h2><div class="scroll" id="feed"></div></div>
+    </div>
+  </section>
+
+  <section class="view" id="analysis">
+    <div class="row" style="margin-bottom:12px"><button class="btn primary" id="runAnalysis">Run analysis</button>
+      <span class="muted" id="analysisNote"></span></div>
+    <div class="grid">
+      <div class="panel span-12"><h2>Brute force (per IP, 60 s windows, threshold 10)</h2><div class="scroll" id="bf"></div></div>
+      <div class="panel span-6"><h2>Top credential pairs</h2><div class="scroll" id="pairs"></div></div>
+      <div class="panel span-6"><h2>Credential families</h2><div id="families"></div></div>
+      <div class="panel span-12"><h2>Campaigns (Jaccard clustering of credentials and commands)</h2><div id="campaigns"></div></div>
+      <div class="panel span-4"><h2>Exploits by category</h2><div id="excat"></div></div>
+      <div class="panel span-4"><h2>Exploits by CVE</h2><div class="scroll" id="excve"></div></div>
+      <div class="panel span-4"><h2>Scanners identified</h2><div id="scanners"></div></div>
+      <div class="panel span-12"><h2>Sample exploit requests</h2><div class="scroll" id="samples"></div></div>
+      <div class="panel span-6"><h2>Top source IPs (click for profile)</h2><div class="scroll" id="ips"></div></div>
+      <div class="panel span-6"><h2>IP profile</h2><div class="scroll" id="profile"><p class="muted">Click an IP.</p></div></div>
+      <div class="panel span-4"><h2>ASNs</h2><div class="scroll" id="asns"></div></div>
+      <div class="panel span-4"><h2>Shared /24 prefixes</h2><div class="scroll" id="prefixes"></div></div>
+      <div class="panel span-4"><h2>Fingerprints (HASSH, keys, User-Agents)</h2><div class="scroll" id="fps"></div></div>
+      <div class="panel span-4"><h2>Countries</h2><div class="scroll" id="countries"></div></div>
+      <div class="panel span-8"><h2>Activity heatmap (weekday x hour, UTC)</h2><div id="heat"></div></div>
+      <div class="panel span-6"><h2>Per node</h2><div id="pernode"></div></div>
+      <div class="panel span-6"><h2>Bursts and session timing</h2><div id="bursts"></div></div>
+    </div>
+  </section>
+
+  <section class="view" id="tools">
+    <div class="grid">
+      <div class="panel span-6"><h2>Live simulator (real traffic to the local sensors)</h2>
+        <div class="row">
+          <button class="btn" data-live="ssh_bruteforce">SSH brute force</button>
+          <button class="btn" data-live="ssh_interactive">SSH interactive</button>
+          <button class="btn" data-live="telnet_mirai">Telnet Mirai</button>
+          <button class="btn" data-live="http_exploits">HTTP exploits</button>
+          <button class="btn" data-live="banner_probe">Banner probe</button>
+          <button class="btn primary" data-live="all_live">All live</button>
+        </div>
+        <p class="muted">SSH interactive types like a person, so it takes about 45 s.</p>
+      </div>
+      <div class="panel span-6"><h2>Injection simulator (synthetic signed events)</h2>
+        <div class="row">
+          <label>days <input id="days" type="number" value="14" min="1" max="60" style="width:70px"></label>
+          <label>scale <input id="scale" type="number" value="1" step="0.5" min="0.1" max="5" style="width:70px"></label>
+          <button class="btn primary" id="inject">Inject campaigns</button>
+          <button class="btn danger" id="purge">Purge simulated data</button>
+        </div>
+      </div>
+      <div class="panel span-12"><h2>Simulator status</h2><div id="simStatus"><p class="muted">Nothing run yet.</p></div></div>
+      <div class="panel span-12"><h2>Export and threat intel</h2>
+        <div class="row">
+          <a class="btn" id="csv" href="/api/export/csv">Download CSV</a>
+          <a class="btn" id="stix" href="/api/export/stix">Download STIX 2.1</a>
+          <button class="btn" id="enrich">Enrich via threat-intel (:8102)</button>
+          <span class="muted">Exports leave simulated data out unless "include simulated" is ticked.</span>
+        </div>
+        <div id="exportOut"></div>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="/static/hud.js"></script>
+<script src="/static/app.js?v=0.1.0"></script>
+</body>
+</html>

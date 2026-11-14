@@ -74,7 +74,7 @@ Docker (collector, three sensor nodes, edge relay):
 ```
 
 This needs the docker compose v2 plugin (`docker compose`). The image build is wrapped in
-`flock /home/iker/seclab-notes/.docker.lock` so lab builds never run in parallel.
+`flock $XDG_RUNTIME_DIR/seclab-docker.lock` (override with `SECLAB_DOCKER_LOCK`) so lab builds never run in parallel.
 
 CLI:
 
@@ -108,6 +108,18 @@ Three tabs, mostly plain tables, one heatmap.
 
 The "include simulated" tick box in the header applies to every view. Exports leave simulated
 data out unless it is ticked, and then STIX indicators carry the label `simulated-test-data`.
+
+## Terminal HUD
+
+`python -m honeypot tui` shows a curses dashboard of the collector API (default
+`http://127.0.0.1:8103`, change with `--url`). Views: Live, Brute force, Infrastructure (Enter
+opens an IP profile) and Nodes. Keys: Tab or 1-4 switch view, arrows move, Enter opens a detail,
+Esc goes back, `s` runs the live scenarios, `i` injects synthetic events, `p` purges simulated
+events (asks first), `r` refreshes, `q` quits. Add `--once` to print every view as plain text
+for SSH sessions, scripts or a quick check.
+
+Attacker-controlled strings (usernames, paths, commands) are stripped of control characters
+before they are displayed.
 
 ## How each requirement is met
 

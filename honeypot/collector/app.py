@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
+from ..localguard import LocalGuard
 from .. import NAME, __version__
 from ..analysis import bruteforce, campaigns, credentials, exploits, infrastructure, trends
 from ..config import PROJECT_ROOT, CollectorConfig, load_node_secrets
@@ -65,6 +66,7 @@ def create_app(cfg: CollectorConfig | None = None, node_secrets: dict | None = N
     geo = GeoResolver()
     runner = SimRunner()
     app = FastAPI(title=NAME, version=__version__)
+    app.add_middleware(LocalGuard)  # localhost-only: host allowlist, CSRF block, CSP
     app.state.db, app.state.verifier, app.state.geo = db, verifier, geo
 
     def sim(v: int) -> bool:

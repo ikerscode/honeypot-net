@@ -54,6 +54,7 @@ services:
       HP_BIND: 0.0.0.0
       HP_NODE_SECRETS: node-lon=${HP_SECRET_LON:?run ./compose.sh},node-fra=${HP_SECRET_FRA:?},node-nyc=${HP_SECRET_NYC:?},node-sgp=${HP_SECRET_SGP:?}
       HP_SIM_TARGET: edge   # HUD live simulator goes through the relay like outside traffic
+      SECLAB_ALLOWED_HOSTS: collector   # sensors reach the collector by its service name
     volumes: ["collector-data:/data"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8103/api/health', timeout=3)"]

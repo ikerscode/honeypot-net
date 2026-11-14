@@ -20,6 +20,7 @@ if [ ! -f .env ]; then
 fi
 
 # Builds from all seclab projects share one lock so they never run in parallel.
-flock /home/iker/seclab-notes/.docker.lock docker build -t honeypot-net:0.1.0 -f docker/Dockerfile .
+LOCK="${SECLAB_DOCKER_LOCK:-${XDG_RUNTIME_DIR:-/tmp}/seclab-docker.lock}"
+flock "$LOCK" docker build -t honeypot-net:0.1.0 -f docker/Dockerfile .
 docker compose up -d
 echo "HUD: http://127.0.0.1:8103  (ssh 2222-2224, telnet 2323-2325, http 8180-8182, redis 6380, mysql 3307)"

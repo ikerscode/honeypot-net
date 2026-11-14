@@ -1,6 +1,7 @@
 """Command line entry point.
 
   python -m honeypot collector                    start the collector + HUD (127.0.0.1:8103)
+  python -m honeypot tui [--url URL] [--once]     terminal HUD (--once prints plain text)
   python -m honeypot sensor <ssh|telnet|http|banner|all> [...]
   python -m honeypot edge                         compose-only TCP relay (see edge.py)
   python -m honeypot simulate <scenario>          live: ssh_bruteforce ssh_interactive telnet_mirai
@@ -56,6 +57,13 @@ def cmd_simulate(args):
                  "redis": args.redis_port, "mysql": args.mysql_port}
         result = live.run(args.scenario, args.host, ports)
     print(json.dumps(result, indent=2, default=str))
+
+
+def cmd_tui(args):
+    from . import termhud
+    from .tui_spec import SPEC
+
+    sys.exit(termhud.run(SPEC, args.url, once=args.once))
 
 
 def _db():
@@ -123,6 +131,11 @@ def main(argv=None):
     s = sub.add_parser("collector", help="run the collector API + HUD")
     s.add_argument("--port", type=int)
     s.set_defaults(fn=cmd_collector)
+
+    s = sub.add_parser("tui", help="terminal HUD against the collector API")
+    s.add_argument("--url", default="http://127.0.0.1:8103", help="collector base URL")
+    s.add_argument("--once", action="store_true", help="print every view once as plain text and exit")
+    s.set_defaults(fn=cmd_tui)
 
     s = sub.add_parser("sensor", help="run sensors (configure with HP_* env vars)")
     s.add_argument("types", nargs="+", help="ssh telnet http banner or all")

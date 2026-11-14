@@ -2,6 +2,7 @@
 # No-docker mode: collector + one local sensor node (one process per sensor type), all on 127.0.0.1.
 #   ./run.sh            start everything, Ctrl-C stops everything
 #   ./run.sh collector  collector + HUD only
+umask 077  # data (captured credentials, samples, intel) is private to this user
 set -euo pipefail
 cd "$(dirname "$0")"
 

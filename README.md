@@ -1,3 +1,5 @@
+[![tests](https://github.com/ikerscode/honeypot-net/actions/workflows/tests.yml/badge.svg)](https://github.com/ikerscode/honeypot-net/actions/workflows/tests.yml)
+
 # honeypot-net
 
 A small distributed honeypot network for a home lab. Low-interaction sensors (SSH, Telnet,

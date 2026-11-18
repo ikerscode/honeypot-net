@@ -1,5 +1,5 @@
 # One image for the collector, the sensors and the edge relay; the command picks the role.
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 RUN pip install --no-cache-dir "fastapi==0.115.6" "uvicorn==0.34.0" "paramiko==3.5.0" "httpx==0.28.1" "maxminddb==2.6.2"
 
